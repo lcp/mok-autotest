@@ -2,46 +2,14 @@
 
 import os
 import sys
+import getopt
 import pexpect
 import subprocess
 
-mok_key = 'whatever.der'
+backing_img = None
 
-username='root'
-password=' '
-mok_password = password
-
-disk = "os-13.1-minimal.img"
-firmware = "/usr/share/qemu/ovmf-x86_64-suse.bin"
-mem_size = "1024"
-share_dir = "share"
-logfile = 'automate.log'
-#logfile = None
-
-qemu_cmd = "qemu-system-x86_64 -enable-kvm -nographic"
-if disk != None:
-	backing_img = disk + '.backing'
-	qemu_cmd += " -hda " + backing_img
-if firmware != None:
-	qemu_cmd += " -bios " + firmware
-if mem_size != None:
-	qemu_cmd += " -m " + mem_size
-if share_dir != None:
-	qemu_cmd += " -fsdev local,id=exp,path=" + share_dir + ",security_model=mapped-file"
-	qemu_cmd += " -device virtio-9p-pci,fsdev=exp,mount_tag=v_share"
-
-if logfile != None:
-	out_log = file(logfile,'w')
-else:
-	out_log = sys.stdout
-
-print 'Auto Test Start'
-
-# create the backing image
-img_cmd = 'qemu-img create -f qcow2 -b ' + disk + ' ' + backing_img
-subprocess.check_call(img_cmd.split(), stdout=subprocess.PIPE)
-
-# TODO check share_dir
+def print_help ():
+	print sys.argv[0] + " -k <DER file> -p <password> -s <share dir> -v <vm image> -l <log file>"
 
 def unexpected (vm, message):
 	print "UNEXPECTED: " + message
@@ -49,7 +17,7 @@ def unexpected (vm, message):
 	os.remove(backing_img)
 	sys.exit(1)
 
-def login (vm):
+def login (vm, username, password):
 	try:
 		vm.expect(' login: ', timeout=120)
 		vm.sendline(username)
@@ -65,7 +33,7 @@ def execute_cmd (vm, cmd):
 	except:
 		unexpected (vm, cmd)
 
-def enroll_mok (vm):
+def enroll_mok (vm, mok_password):
 	execute_cmd(vm, 'mokutil -P -i mok_key.der')
 	# reboot to MokManager
 	execute_cmd(vm, 'reboot')
@@ -94,7 +62,7 @@ def enroll_mok (vm):
 	except:
 		unexpected (vm, 'failed to enroll MOK')
 
-def delete_mok (vm):
+def delete_mok (vm, mok_password):
 	execute_cmd(vm, 'mokutil -P -d mok_key.der')
 	# reboot to MokManager
 	execute_cmd(vm, 'reboot')
@@ -131,50 +99,112 @@ def test_mok (vm):
 	else:
 		unexpected(vm, 'failed to test MOK')
 
-# Start the Virtual Machine
-vm = pexpect.spawn(qemu_cmd, logfile=out_log)
+def main (argv):
+	vm_img = None
+	logfile = None
+	mok_key = None
+	password = None
 
-# log user into the system
-login(vm)
+	# parse the arguments
+	try:
+		opts, args = getopt.getopt(argv,"hk:l:p:s:v:",["key=", "log=", "password=", "vm_image="])
+	except getopt.GetoptError:
+		print_help()
+		sys.exit(2)
 
-# mount the share directory
-execute_cmd(vm, 'mkdir share')
-execute_cmd(vm, 'mount -t 9p -o trans=virtio v_share share -oversion=9p2000.L')
-# copy the key
-execute_cmd(vm, 'cp -f share/' + mok_key + " mok_key.der")
-# umount the share directory
-execute_cmd(vm, 'umount share')
-execute_cmd(vm, 'rm -rf share')
+	for opt, arg in opts:
+		if opt == '-h':
+			print_help()
+			sys.exit()
+		elif opt in ("-k", "--key"):
+			mok_key = arg
+		elif opt in ("-l", "--log"):
+			logfile = arg
+		elif opt in ("-p", "--password"):
+			password = arg
+		elif opt in ("-v", "--vm_image"):
+			vm_img = arg
 
-while True:
-	i = test_mok(vm)
-	if i == 0:
-		enroll_mok(vm)
-		test_item = "enroll";
-	elif i == 1:
-		delete_mok(vm)
-		test_item = "delete";
+	if vm_img == None or mok_key == None or password == None:
+		print_help()
+		sys.exit(2)
 
-	login(vm)
+	# prepare for the test
+	username='root'
+	mok_password = password
 
-	i = test_mok(vm)
-	if i == 0 and test_item == "delete":
-		print 'MOK delete [PASSED]'
-		test_item = "done"
-	elif i == 1 and test_item == "enroll":
-		print 'MOK enroll [PASSED]'
-	else:
-		print 'MOK ' + test_item + ' [FAILED]'
-		unexpected(vm, 'test item ' + test_item)
+	# TODO create a temporary dir
+	share_dir = "share"
 
-	if test_item == "done":
-		break
+	firmware = "/usr/share/qemu/ovmf-x86_64-suse.bin"
+	mem_size = "1024"
+	backing_img = vm_img + '.backing'
 
-# All done!
-execute_cmd(vm, 'shutdown -h now')
+	qemu_cmd = "qemu-system-x86_64 -enable-kvm -nographic"
+	qemu_cmd += " -hda " + backing_img
+	qemu_cmd += " -bios " + firmware
+	qemu_cmd += " -m " + mem_size
+	qemu_cmd += " -fsdev local,id=exp,path=" + share_dir + ",security_model=mapped-file"
+	qemu_cmd += " -device virtio-9p-pci,fsdev=exp,mount_tag=v_share"
 
-vm.wait()
+	if logfile != None:
+		out_log = file(logfile,'w')
 
-os.remove(backing_img)
+	print 'Auto Test Start'
 
-print "DONE!"
+	# create the backing image
+	img_cmd = 'qemu-img create -f qcow2 -b ' + vm_img + ' ' + backing_img
+	subprocess.check_call(img_cmd.split(), stdout=subprocess.PIPE)
+
+	# TODO check share_dir
+
+
+	# Start the Virtual Machine
+	vm = pexpect.spawn(qemu_cmd, logfile=out_log)
+
+	login(vm, username, password)
+
+	# mount the share directory
+	execute_cmd(vm, 'mkdir share')
+	execute_cmd(vm, 'mount -t 9p -o trans=virtio v_share share -oversion=9p2000.L')
+	# copy the key
+	execute_cmd(vm, 'cp -f share/' + mok_key + " mok_key.der")
+	# umount the share directory
+	execute_cmd(vm, 'umount share')
+	execute_cmd(vm, 'rm -rf share')
+
+	while True:
+		i = test_mok(vm)
+		if i == 0:
+			enroll_mok(vm, mok_password)
+			test_item = "enroll";
+		elif i == 1:
+			delete_mok(vm, mok_password)
+			test_item = "delete";
+
+		login(vm, username, password)
+
+		i = test_mok(vm)
+		if i == 0 and test_item == "delete":
+			print 'MOK delete [PASSED]'
+			test_item = "done"
+		elif i == 1 and test_item == "enroll":
+			print 'MOK enroll [PASSED]'
+		else:
+			print 'MOK ' + test_item + ' [FAILED]'
+			unexpected(vm, 'test item ' + test_item)
+
+		if test_item == "done":
+			break
+
+	# All done!
+	vm.terminate()
+	# execute_cmd(vm, 'shutdown -h now')
+	# vm.wait()
+
+	os.remove(backing_img)
+
+	print "DONE!"
+
+if __name__ == "__main__":
+	main(sys.argv[1:])
