@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
+import os
 import sys
 import pexpect
+import subprocess
 
 mok_key = 'whatever.der'
 
@@ -18,7 +20,8 @@ logfile = 'automate.log'
 
 qemu_cmd = "qemu-system-x86_64 -enable-kvm -nographic"
 if disk != None:
-	qemu_cmd += " -hda " + disk
+	backing_img = disk + '.backing'
+	qemu_cmd += " -hda " + backing_img
 if firmware != None:
 	qemu_cmd += " -bios " + firmware
 if mem_size != None:
@@ -27,20 +30,23 @@ if share_dir != None:
 	qemu_cmd += " -fsdev local,id=exp,path=" + share_dir + ",security_model=mapped-file"
 	qemu_cmd += " -device virtio-9p-pci,fsdev=exp,mount_tag=v_share"
 
-
 if logfile != None:
 	out_log = file(logfile,'w')
 else:
 	out_log = sys.stdout
 
-# print "QEMU command: " + qemu_cmd
 print 'Auto Test Start'
+
+# create the backing image
+img_cmd = 'qemu-img create -f qcow2 -b ' + disk + ' ' + backing_img
+subprocess.check_call(img_cmd.split(), stdout=subprocess.PIPE)
 
 # TODO check share_dir
 
 def unexpected (vm, message):
 	print "UNEXPECTED: " + message
 	vm.terminate()
+	os.remove(backing_img)
 	sys.exit(1)
 
 def login (vm):
@@ -168,4 +174,7 @@ while True:
 execute_cmd(vm, 'shutdown -h now')
 
 vm.wait()
+
+os.remove(backing_img)
+
 print "DONE!"
