@@ -37,8 +37,14 @@ def execute_cmd (vm, cmd):
 	except:
 		unexpected (vm, cmd)
 
-def enroll_mok (vm, mok_password):
-	execute_cmd(vm, 'mokutil -P -i mok_key.der')
+def mok_action (vm, action, mok_password):
+	if action == "enroll":
+		execute_cmd(vm, 'mokutil -P -i mok_key.der')
+	elif action == "delete":
+		execute_cmd(vm, 'mokutil -P -d mok_key.der')
+	else:
+		unexpected(vm, "unknown action")
+
 	# reboot to MokManager
 	execute_cmd(vm, 'reboot')
 
@@ -46,7 +52,10 @@ def enroll_mok (vm, mok_password):
 		vm.expect('Shim UEFI key management', timeout=300)
 		vm.send(' ')
 
-		vm.expect('Enroll MOK');
+		if action == "enroll":
+			vm.expect('Enroll MOK')
+		elif action == "delete":
+			vm.expect('Delete MOK')
 		vm.send('\033[B') # down
 		vm.sendline('\r')
 
@@ -64,36 +73,7 @@ def enroll_mok (vm, mok_password):
 		vm.expect('OK');
 		vm.sendline('\r')
 	except:
-		unexpected (vm, 'failed to enroll MOK')
-
-def delete_mok (vm, mok_password):
-	execute_cmd(vm, 'mokutil -P -d mok_key.der')
-	# reboot to MokManager
-	execute_cmd(vm, 'reboot')
-
-	try:
-		vm.expect('Shim UEFI key management', timeout=300)
-		vm.send(' ')
-
-		vm.expect('Delete MOK');
-		vm.send('\033[B') # down
-		vm.sendline('\r')
-
-		vm.expect('View key 0');
-		vm.send('\033[B') # down
-		vm.sendline('\r')
-
-		vm.expect('No');
-		vm.send('\033[B') # down
-		vm.sendline('\r')
-
-		vm.expect('Password:');
-		vm.sendline(mok_password + '\r')
-
-		vm.expect('OK');
-		vm.sendline('\r')
-	except:
-		unexpected (vm, 'failed to delete MOK')
+		unexpected (vm, 'failed to ' + action + ' MOK')
 
 def test_mok (vm):
 	execute_cmd(vm, 'mokutil -t mok_key.der')
@@ -189,10 +169,7 @@ def main (argv):
 		test_item = "delete"
 
 	while True:
-		if test_item == "enroll":
-			enroll_mok(vm, mok_password)
-		elif test_item == "delete":
-			delete_mok(vm, mok_password)
+		mok_action(vm, test_item, mok_password)
 
 		login(vm, username, password)
 
