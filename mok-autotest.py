@@ -12,7 +12,7 @@ backing_img = None
 share_dir = None
 
 def print_help ():
-	print sys.argv[0] + " -k <DER file> -p <password> -v <vm image> -l <log file>"
+	print sys.argv[0] + " -k <DER file> -p <password> -v <vm image> -u <uefi image> -l <log file>"
 
 def unexpected (vm, message):
 	print "UNEXPECTED: " + message
@@ -106,12 +106,15 @@ def test_mok (vm):
 def main (argv):
 	vm_img = None
 	logfile = None
+	out_log = None
 	mok_key = None
 	password = None
 
+	firmware = "/usr/share/qemu/ovmf-x86_64-suse.bin"
+
 	# parse the arguments
 	try:
-		opts, args = getopt.getopt(argv,"hk:l:p:s:v:",["key=", "log=", "password=", "vm_image="])
+		opts, args = getopt.getopt(argv,"hk:l:p:u:v:",["key=", "log=", "password=", "uefi=","vm_image="])
 	except getopt.GetoptError:
 		print_help()
 		sys.exit(2)
@@ -124,6 +127,8 @@ def main (argv):
 			mok_key = arg
 		elif opt in ("-l", "--log"):
 			logfile = arg
+		elif opt in ("-u", "--uefi"):
+			firmware = arg
 		elif opt in ("-p", "--password"):
 			password = arg
 		elif opt in ("-v", "--vm_image"):
@@ -137,10 +142,9 @@ def main (argv):
 	username='root'
 	mok_password = password
 
-	# TODO create a temporary dir
+	# create a temporary dir
 	share_dir = tempfile.mkdtemp(prefix="moktest-")
 
-	firmware = "/usr/share/qemu/ovmf-x86_64-suse.bin"
 	mem_size = "1024"
 	backing_img = vm_img + '.backing'
 
@@ -178,14 +182,17 @@ def main (argv):
 	execute_cmd(vm, 'rm -rf share')
 	shutil.rmtree(share_dir)
 
+	i = test_mok(vm)
+	if i == 0:
+		test_item = "enroll"
+	elif i == 1:
+		test_item = "delete"
+
 	while True:
-		i = test_mok(vm)
-		if i == 0:
+		if test_item == "enroll":
 			enroll_mok(vm, mok_password)
-			test_item = "enroll";
-		elif i == 1:
+		elif test_item == "delete":
 			delete_mok(vm, mok_password)
-			test_item = "delete";
 
 		login(vm, username, password)
 
@@ -195,6 +202,7 @@ def main (argv):
 			test_item = "done"
 		elif i == 1 and test_item == "enroll":
 			print 'MOK enroll [PASSED]'
+			test_item = "delete"
 		else:
 			print 'MOK ' + test_item + ' [FAILED]'
 			unexpected(vm, 'test item ' + test_item)
@@ -204,8 +212,6 @@ def main (argv):
 
 	# All done!
 	vm.terminate()
-	# execute_cmd(vm, 'shutdown -h now')
-	# vm.wait()
 
 	os.remove(backing_img)
 
