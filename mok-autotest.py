@@ -3,18 +3,22 @@
 import os
 import sys
 import getopt
+import shutil
 import pexpect
+import tempfile
 import subprocess
 
 backing_img = None
+share_dir = None
 
 def print_help ():
-	print sys.argv[0] + " -k <DER file> -p <password> -s <share dir> -v <vm image> -l <log file>"
+	print sys.argv[0] + " -k <DER file> -p <password> -v <vm image> -l <log file>"
 
 def unexpected (vm, message):
 	print "UNEXPECTED: " + message
 	vm.terminate()
 	os.remove(backing_img)
+	shutil.rmtree(share_dir)
 	sys.exit(1)
 
 def login (vm, username, password):
@@ -134,7 +138,7 @@ def main (argv):
 	mok_password = password
 
 	# TODO create a temporary dir
-	share_dir = "share"
+	share_dir = tempfile.mkdtemp(prefix="moktest-")
 
 	firmware = "/usr/share/qemu/ovmf-x86_64-suse.bin"
 	mem_size = "1024"
@@ -156,8 +160,8 @@ def main (argv):
 	img_cmd = 'qemu-img create -f qcow2 -b ' + vm_img + ' ' + backing_img
 	subprocess.check_call(img_cmd.split(), stdout=subprocess.PIPE)
 
-	# TODO check share_dir
-
+	# copy the key to share_dir
+	shutil.copyfile(mok_key, share_dir + "/mok_key.der")
 
 	# Start the Virtual Machine
 	vm = pexpect.spawn(qemu_cmd, logfile=out_log)
@@ -168,10 +172,11 @@ def main (argv):
 	execute_cmd(vm, 'mkdir share')
 	execute_cmd(vm, 'mount -t 9p -o trans=virtio v_share share -oversion=9p2000.L')
 	# copy the key
-	execute_cmd(vm, 'cp -f share/' + mok_key + " mok_key.der")
+	execute_cmd(vm, 'cp -f share/mok_key.der mok_key.der')
 	# umount the share directory
 	execute_cmd(vm, 'umount share')
 	execute_cmd(vm, 'rm -rf share')
+	shutil.rmtree(share_dir)
 
 	while True:
 		i = test_mok(vm)
