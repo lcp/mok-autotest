@@ -129,7 +129,7 @@ def main (argv):
 	backing_img = vm_img + '.backing'
 
 	qemu_cmd = "qemu-system-x86_64 -enable-kvm -nographic"
-	qemu_cmd += " -hda " + backing_img
+	qemu_cmd += " -drive file=" + backing_img
 	qemu_cmd += " -bios " + firmware
 	qemu_cmd += " -m " + mem_size
 	qemu_cmd += " -fsdev local,id=exp,path=" + share_dir + ",security_model=mapped-file"
