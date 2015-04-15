@@ -10,140 +10,111 @@ class VMError(Exception):
 	def __init__(self, msg):
 		self.msg = msg
 
-def setup_image (monitor_socket, serial_socket, working_dir, testcase_path, password):
-
-	# Connect to monitor_socket
-	if os.path.exists(monitor_socket) == False:
-		print "Failed to connect to QEMU monitor"
-		sys.exit(1)
-
-	monitor = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-	monitor.connect(monitor_socket)
-
+def setup_image (vm_control, password):
 	# openSUSE shim prompt
-	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
-				       "shim-cert-prompt.png", 5, -1)
+	match = vm_control.match_screen_wait("shim-cert-prompt.png", 5, -1)
 	if match == False:
 		raise VMError("Failed to match shim-cert-prompt.png")
 	print "openSUSE shim prompt"
 	time.sleep(2)
-	qemu.sendkey(monitor, "down")
-	qemu.sendkey(monitor, "ret")
+	vm_control.sendkey("down")
+	vm_control.sendkey("ret")
 
 	time.sleep(5)
 
 	# grub2
 	# TODO screenshot
 	print "grub2"
-	qemu.sendkey(monitor, "ret")
+	vm_control.sendkey("ret")
 
 	# Welcome
-	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
-				       "os13.2-welcome.png", 5, -1)
+	match = vm_control.match_screen_wait("os13.2-welcome.png", 5, -1)
 	if match == False:
 		raise VMError("Failed to match shim-cert-prompt.png")
 	time.sleep(1)
 	print "Welcome"
-	qemu.sendkey(monitor, "alt-n")
+	vm_control.sendkey("alt-n")
 
 	# Installation Options
-	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
-				       "os13.2-installation-options.png", 5, 3)
+	match = vm_control.match_screen_wait("os13.2-installation-options.png", 5, 3)
 	if match == False:
 		raise VMError("Failed to match os13.2-installation-options.png")
 	time.sleep(1)
 	print "Installation Options"
-	qemu.sendkey(monitor, "alt-n")
+	vm_control.sendkey("alt-n")
 
 	# Suggested Partitioning
-	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
-				       "os13.2-suggested-partitioning.png", 5, 3)
+	match = vm_control.match_screen_wait("os13.2-suggested-partitioning.png", 5, 3)
 	if match == False:
 		raise VMError("Failed to match os13.2-suggested-partitioning.png")
 	time.sleep(1)
 	print "Suggested Partitioning"
-	qemu.sendkey(monitor, "alt-n")
+	vm_control.sendkey("alt-n")
 
 	# Clock and Time Zone
-	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
-				       "os13.2-clock-and-time-zone.png", 5, 3)
+	match = vm_control.match_screen_wait("os13.2-clock-and-time-zone.png", 5, 3)
 	if match == False:
 		raise VMError("Failed to match os13.2-clock-and-time-zone.png")
 	time.sleep(1)
 	print "Clock and Time Zone"
-	qemu.sendkey(monitor, "alt-n")
+	vm_control.sendkey("alt-n")
 
 	# Desktop Selection
-	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
-				       "os13.2-desktop-selection.png", 5, 3)
+	match = vm_control.match_screen_wait("os13.2-desktop-selection.png", 5, 3)
 	if match == False:
 		raise VMError("Failed to match os13.2-desktop-selection.png")
 	time.sleep(1)
 	print "Desktop Selection"
 	#	other
-	qemu.sendkey(monitor, "alt-o")
+	vm_control.sendkey("alt-o")
 	time.sleep(1)
 	#	text mode
-	qemu.sendkey(monitor, "alt-i")
+	vm_control.sendkey("alt-i")
 	time.sleep(1)
-	qemu.sendkey(monitor, "alt-n")
+	vm_control.sendkey("alt-n")
 
 	# Create New User
-	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
-				       "os13.2-create-new-user.png", 5, 3)
+	match = vm_control.match_screen_wait("os13.2-create-new-user.png", 5, 3)
 	if match == False:
 		raise VMError("Failed to match os13.2-create-new-user.png")
 	time.sleep(1)
 	print "Create New User"
 	#	User's Full Name
-	qemu.sendstring(monitor, "linux")
+	vm_control.sendstring("linux")
 	#	Password
-	qemu.sendkey(monitor, "alt-p")
-	qemu.sendstring(monitor, password)
-	qemu.sendkey(monitor, "alt-o")
+	vm_control.sendkey("alt-p")
+	vm_control.sendstring(password)
+	vm_control.sendkey("alt-o")
 	#	Confirm Password
-	qemu.sendstring(monitor, password)
-	qemu.sendkey(monitor, "alt-n")
+	vm_control.sendstring(password)
+	vm_control.sendkey("alt-n")
 
 	# Installation Settings
-	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
-				       "os13.2-installation-settings.png", 5, 3)
+	match = vm_control.match_screen_wait("os13.2-installation-settings.png", 5, 3)
 	if match == False:
 		raise VMError("Failed to match os13.2-installation-settings.png")
 	time.sleep(1)
 	print "Installation Settings"
 	time.sleep(2)
-	qemu.sendkey(monitor, "alt-i")
+	vm_control.sendkey("alt-i")
 	time.sleep(5)
-	qemu.sendkey(monitor, "alt-i")
+	vm_control.sendkey("alt-i")
 
 	# Wait the image setup
-	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
-				       "os13.2-login.png", 10, -1)
+	match = vm_control.match_screen_wait("os13.2-login.png", 10, -1)
 	if match == False:
 		raise VMError("Failed to match os13.2-login.png")
 	print "Installation done"
 
-	monitor.close()
-
-def enable_serial_console (monitor_socket, serial_socket, working_dir, testcase_path, password):
-	# Connect to monitor_socket
-	if os.path.exists(monitor_socket) == False:
-		print "Failed to connect to QEMU monitor"
-		sys.exit(1)
-
-	monitor = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-	monitor.connect(monitor_socket)
-
+def enable_serial_console (vm_control, password):
 	# Wait the image setup
-	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
-				       "os13.2-login.png", 10, -1)
+	match = vm_control.match_screen_wait("os13.2-login.png", 10, -1)
 	if match == False:
 		raise VMError("Failed to match os13.2-login.png")
 
-	qemu.sendstring(monitor, "root\n")
+	vm_control.sendstring("root\n")
 	time.sleep(5)
-	qemu.sendstring(monitor, password + "\n")
+	vm_control.sendstring(password + "\n")
 	time.sleep(5)
 
 	sed_cmd = "sed -i"
@@ -151,19 +122,9 @@ def enable_serial_console (monitor_socket, serial_socket, working_dir, testcase_
 	sed_cmd += " /etc/default/grub"
 
 	print "serial console parameters"
-	qemu.sendstring(monitor, sed_cmd + "\n")
+	vm_control.sendstring(sed_cmd + "\n")
 
 	time.sleep(5)
 
 	print "update-bootloader"
-	qemu.sendstring(monitor, "update-bootloader --refresh\n")
-
-	time.sleep(10)
-
-	print "shutdown"
-	qemu.sendstring(monitor, "shutdown -h now\n")
-
-	# wait the last command
-	time.sleep(3)
-
-	monitor.close()
+	vm_control.sendstring("update-bootloader --refresh\n")

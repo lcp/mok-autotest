@@ -99,7 +99,10 @@ def main (argv):
 	if os.path.isdir(testcase_path) == True:
 		testcase_path = os.path.abspath(testcase_path)
 		sys.path.append(testcase_path)
+		from qemu import QemuControl
+		from qemu import QemuError
 		import vmimage
+		from vmimage import VMError
 	else:
 		print testcase_path + " is no a directory."
 		sys.exit(1)
@@ -160,10 +163,13 @@ def main (argv):
 	# wait qemu to start
 	time.sleep (5)
 
+	vm_control = QemuControl(monitor_socket, serial_socket, working_dir,
+				 testcase_path)
+	vm_control.connect()
+
 	# scripts to setup the image
 	try:
-		vmimage.setup_image(monitor_socket, serial_socket, working_dir,
-				    testcase_path, Password)
+		vmimage.setup_image(vm_control, Password)
 	except socket.error:
 		print "qemu socket error"
 		if vm.poll() == None:
@@ -177,8 +183,7 @@ def main (argv):
 
 	# enable serial console
 	try:
-		vmimage.enable_serial_console(monitor_socket, serial_socket, working_dir,
-					      testcase_path, Password)
+		vmimage.enable_serial_console(vm_control, Password)
 	except socket.error:
 		print "qemu socket error"
 		if vm.poll() == None:
@@ -189,6 +194,11 @@ def main (argv):
 		if vm.poll() == None:
 			vm.kill()
 		sys.exit(1)
+
+	# wait for the last command
+	time.sleep(1)
+
+	vm_control.shutdown()
 
 	vm.wait()
 
