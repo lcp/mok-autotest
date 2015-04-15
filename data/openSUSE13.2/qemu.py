@@ -3,7 +3,6 @@
 import os
 import cv2
 import time
-import numpy
 import socket
 import tempfile
 
@@ -107,9 +106,8 @@ class QemuControl:
 		except cv2.error:
 			return False
 
-		threshold = 0.8
-		loc = numpy.where(res >= threshold)
-		if loc != (0, 0):
+		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+		if max_val < 0.8:
 			return False
 
 		return True
