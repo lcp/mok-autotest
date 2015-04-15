@@ -168,7 +168,12 @@ def main (argv):
 		print "qemu socket error"
 		if vm.poll() == None:
 			vm.kill()
-		return -1
+		sys.exit(1)
+	except VMError as e:
+		print e.msg
+		if vm.poll() == None:
+			vm.kill()
+		sys.exit(1)
 
 	# enable serial console
 	try:
@@ -178,7 +183,12 @@ def main (argv):
 		print "qemu socket error"
 		if vm.poll() == None:
 			vm.kill()
-		return -1
+		sys.exit(1)
+	except VMError as e:
+		print e.msg
+		if vm.poll() == None:
+			vm.kill()
+		sys.exit(1)
 
 	vm.wait()
 

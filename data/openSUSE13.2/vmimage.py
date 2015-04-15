@@ -6,6 +6,10 @@ import qemu
 import time
 import socket
 
+class VMError(Exception):
+	def __init__(self, msg):
+		self.msg = msg
+
 def setup_image (monitor_socket, serial_socket, working_dir, testcase_path, password):
 
 	# Connect to monitor_socket
@@ -19,11 +23,9 @@ def setup_image (monitor_socket, serial_socket, working_dir, testcase_path, pass
 	# openSUSE shim prompt
 	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
 				       "shim-cert-prompt.png", 5, -1)
-	print "openSUSE shim prompt"
 	if match == False:
-		# TODO Better error handling
-		print "Failed to match shim-cert-prompt.png"
-		return
+		raise VMError("Failed to match shim-cert-prompt.png")
+	print "openSUSE shim prompt"
 	time.sleep(2)
 	qemu.sendkey(monitor, "down")
 	qemu.sendkey(monitor, "ret")
@@ -38,6 +40,9 @@ def setup_image (monitor_socket, serial_socket, working_dir, testcase_path, pass
 	# Welcome
 	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
 				       "os13.2-welcome.png", 5, -1)
+	if match == False:
+		raise VMError("Failed to match shim-cert-prompt.png")
+	time.sleep(1)
 	print "Welcome"
 	qemu.sendkey(monitor, "alt-n")
 
@@ -45,8 +50,8 @@ def setup_image (monitor_socket, serial_socket, working_dir, testcase_path, pass
 	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
 				       "os13.2-installation-options.png", 5, 3)
 	if match == False:
-		print "Failed to match os13.2-installation-options.png"
-		return
+		raise VMError("Failed to match os13.2-installation-options.png")
+	time.sleep(1)
 	print "Installation Options"
 	qemu.sendkey(monitor, "alt-n")
 
@@ -54,20 +59,26 @@ def setup_image (monitor_socket, serial_socket, working_dir, testcase_path, pass
 	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
 				       "os13.2-suggested-partitioning.png", 5, 3)
 	if match == False:
-		print "Failed to match os13.2-suggested-partitioning.png"
-		return
+		raise VMError("Failed to match os13.2-suggested-partitioning.png")
+	time.sleep(1)
 	print "Suggested Partitioning"
 	qemu.sendkey(monitor, "alt-n")
 
 	# Clock and Time Zone
 	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
 				       "os13.2-clock-and-time-zone.png", 5, 3)
+	if match == False:
+		raise VMError("Failed to match os13.2-clock-and-time-zone.png")
+	time.sleep(1)
 	print "Clock and Time Zone"
 	qemu.sendkey(monitor, "alt-n")
 
 	# Desktop Selection
 	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
 				       "os13.2-desktop-selection.png", 5, 3)
+	if match == False:
+		raise VMError("Failed to match os13.2-desktop-selection.png")
+	time.sleep(1)
 	print "Desktop Selection"
 	#	other
 	qemu.sendkey(monitor, "alt-o")
@@ -80,6 +91,9 @@ def setup_image (monitor_socket, serial_socket, working_dir, testcase_path, pass
 	# Create New User
 	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
 				       "os13.2-create-new-user.png", 5, 3)
+	if match == False:
+		raise VMError("Failed to match os13.2-create-new-user.png")
+	time.sleep(1)
 	print "Create New User"
 	#	User's Full Name
 	qemu.sendstring(monitor, "linux")
@@ -94,6 +108,9 @@ def setup_image (monitor_socket, serial_socket, working_dir, testcase_path, pass
 	# Installation Settings
 	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
 				       "os13.2-installation-settings.png", 5, 3)
+	if match == False:
+		raise VMError("Failed to match os13.2-installation-settings.png")
+	time.sleep(1)
 	print "Installation Settings"
 	time.sleep(2)
 	qemu.sendkey(monitor, "alt-i")
@@ -103,6 +120,8 @@ def setup_image (monitor_socket, serial_socket, working_dir, testcase_path, pass
 	# Wait the image setup
 	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
 				       "os13.2-login.png", 10, -1)
+	if match == False:
+		raise VMError("Failed to match os13.2-login.png")
 	print "Installation done"
 
 	monitor.close()
@@ -119,6 +138,8 @@ def enable_serial_console (monitor_socket, serial_socket, working_dir, testcase_
 	# Wait the image setup
 	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
 				       "os13.2-login.png", 10, -1)
+	if match == False:
+		raise VMError("Failed to match os13.2-login.png")
 
 	qemu.sendstring(monitor, "root\n")
 	time.sleep(5)
