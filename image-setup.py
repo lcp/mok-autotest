@@ -144,7 +144,8 @@ def main (argv):
 	qemu_opt += " -cdrom " + iso_img
 
 	# vnc display
-	qemu_opt += " -vnc "
+	# FIXME change the port?
+	qemu_opt += " -vnc :1,share=force-shared"
 
 	qemu_cmd = "qemu-system-x86_64" + qemu_opt
 
