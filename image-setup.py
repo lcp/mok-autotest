@@ -5,9 +5,13 @@ import sys
 import time
 import getopt
 import shutil
+import signal
+import socket
 import subprocess
 
 DEFAULT_UEFI = "/usr/share/qemu/ovmf-x86_64-ms.bin"
+Password = "not a s3cret"
+vm = None
 
 def print_help ():
 	print "This program will create a qemu image and setup the SUSE distros with the UEFI firmware"
@@ -31,6 +35,11 @@ def print_help ():
 	print ""
 	print "--working-dir"
 	print "\tthe directory for the files to be created"
+
+def sig_handler (signum, frame):
+	if signum == signal.SIGINT and vm != None and vm.poll != None:
+		vm.kill()
+		sys.exit(1)
 
 def main (argv):
 	uefi = DEFAULT_UEFI
@@ -129,30 +138,46 @@ def main (argv):
 	qemu_opt += " -serial unix:" + serial_socket + ",server,nowait"
 
 	# hard drive
-	qemu_opt += " -hda " + qemu_img
+	qemu_opt += " -drive file=" + qemu_img
 
 	# cdrom
 	qemu_opt += " -cdrom " + iso_img
 
-	# use sdl instead of gtk
-	qemu_opt += " -sdl"
+	# vnc display
+	qemu_opt += " -vnc "
 
 	qemu_cmd = "qemu-system-x86_64" + qemu_opt
 
 	print "qemu command: " + qemu_cmd + "\n"
+
+	# signal handling
+	signal.signal(signal.SIGINT, sig_handler)
+
 	# start the VM
 	vm = subprocess.Popen(qemu_cmd.split(), stdout=subprocess.PIPE)
-
-	# TODO signal handling
-	#      watch the status of qemu
 
 	# wait qemu to start
 	time.sleep (5)
 
-	# TODO scripts to setup the image
-	vmimage.setup_image(monitor_socket, serial_socket, working_dir, testcase_path)
+	# scripts to setup the image
+	try:
+		vmimage.setup_image(monitor_socket, serial_socket, working_dir,
+				    testcase_path, Password)
+	except socket.error:
+		print "qemu socket error"
+		if vm.poll() == None:
+			vm.kill()
+		return -1
 
-	# TODO enable serial console
+	# enable serial console
+	try:
+		vmimage.enable_serial_console(monitor_socket, serial_socket, working_dir,
+					      testcase_path, Password)
+	except socket.error:
+		print "qemu socket error"
+		if vm.poll() == None:
+			vm.kill()
+		return -1
 
 	vm.wait()
 

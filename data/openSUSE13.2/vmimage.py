@@ -6,7 +6,7 @@ import qemu
 import time
 import socket
 
-def setup_image (monitor_socket, serial_socket, working_dir, testcase_path):
+def setup_image (monitor_socket, serial_socket, working_dir, testcase_path, password):
 
 	# Connect to monitor_socket
 	if os.path.exists(monitor_socket) == False:
@@ -44,12 +44,18 @@ def setup_image (monitor_socket, serial_socket, working_dir, testcase_path):
 	# Installation Options
 	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
 				       "os13.2-installation-options.png", 5, 3)
+	if match == False:
+		print "Failed to match os13.2-installation-options.png"
+		return
 	print "Installation Options"
 	qemu.sendkey(monitor, "alt-n")
 
 	# Suggested Partitioning
 	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
 				       "os13.2-suggested-partitioning.png", 5, 3)
+	if match == False:
+		print "Failed to match os13.2-suggested-partitioning.png"
+		return
 	print "Suggested Partitioning"
 	qemu.sendkey(monitor, "alt-n")
 
@@ -79,10 +85,10 @@ def setup_image (monitor_socket, serial_socket, working_dir, testcase_path):
 	qemu.sendstring(monitor, "linux")
 	#	Password
 	qemu.sendkey(monitor, "alt-p")
-	qemu.sendstring(monitor, "not a s3cret")
+	qemu.sendstring(monitor, password)
 	qemu.sendkey(monitor, "alt-o")
 	#	Confirm Password
-	qemu.sendstring(monitor, "not a s3cret")
+	qemu.sendstring(monitor, password)
 	qemu.sendkey(monitor, "alt-n")
 
 	# Installation Settings
@@ -97,8 +103,46 @@ def setup_image (monitor_socket, serial_socket, working_dir, testcase_path):
 	# Wait the image setup
 	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
 				       "os13.2-login.png", 10, -1)
-	print "All done"
+	print "Installation done"
 
-	qemu.shutdown(monitor)
+	monitor.close()
+
+def enable_serial_console (monitor_socket, serial_socket, working_dir, testcase_path, password):
+	# Connect to monitor_socket
+	if os.path.exists(monitor_socket) == False:
+		print "Failed to connect to QEMU monitor"
+		sys.exit(1)
+
+	monitor = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+	monitor.connect(monitor_socket)
+
+	# Wait the image setup
+	match = qemu.match_screen_wait(monitor, working_dir, testcase_path,
+				       "os13.2-login.png", 10, -1)
+
+	qemu.sendstring(monitor, "root\n")
+	time.sleep(5)
+	qemu.sendstring(monitor, password + "\n")
+	time.sleep(5)
+
+	sed_cmd = "sed -i"
+	sed_cmd += " 's/GRUB_CMDLINE_LINUX_DEFAULT=\"/& console=tty0 console=ttyS0,38400n8 /'"
+	sed_cmd += " /etc/default/grub"
+
+	print "serial console parameters"
+	qemu.sendstring(monitor, sed_cmd + "\n")
+
+	time.sleep(5)
+
+	print "update-bootloader"
+	qemu.sendstring(monitor, "update-bootloader --refresh\n")
+
+	time.sleep(10)
+
+	print "shutdown"
+	qemu.sendstring(monitor, "shutdown -h now\n")
+
+	# wait the last command
+	time.sleep(3)
 
 	monitor.close()

@@ -12,7 +12,68 @@ def sendkey (monitor, key):
 
 def sendstring (monitor, string):
 	for c in string:
-		monitor.send("sendkey " + c + "\n")
+		if c.islower() == True or c.isdigit():
+			sendkey(monitor, c)
+		elif c.isupper() == True:
+			sendkey(monitor, "shift-" + c.lower())
+		elif c == "'":
+			sendkey(monitor, "apostrophe")
+		elif c == '*':
+			sendkey(monitor, "asterisk")
+		elif c == '\\':
+			sendkey(monitor, "backslash")
+		elif c == '[':
+			sendkey(monitor, "bracket_left")
+		elif c == ']':
+			sendkey(monitor, "bracket_right")
+		elif c == ',':
+			sendkey(monitor, "comma")
+		elif c == '.':
+			sendkey(monitor, "dot")
+		elif c == '=':
+			sendkey(monitor, "equal")
+		elif c == '`':
+			sendkey(monitor, "grave_accent")
+		elif c == '+':
+			sendkey(monitor, "kp_add")
+		elif c == '-':
+			sendkey(monitor, "minus")
+		elif c == '\n':
+			sendkey(monitor, "ret")
+		elif c == ';':
+			sendkey(monitor, "semicolon")
+		elif c == ':':
+			sendkey(monitor, "shift-semicolon")
+		elif c == '!':
+			sendkey(monitor, "shift-1")
+		elif c == '@':
+			sendkey(monitor, "shift-2")
+		elif c == '#':
+			sendkey(monitor, "shift-3")
+		elif c == '$':
+			sendkey(monitor, "shift-4")
+		elif c == '%':
+			sendkey(monitor, "shift-5")
+		elif c == '^':
+			sendkey(monitor, "shift-6")
+		elif c == '&':
+			sendkey(monitor, "shift-7")
+		elif c == '(':
+			sendkey(monitor, "shift-9")
+		elif c == ')':
+			sendkey(monitor, "shift-0")
+		elif c == '_':
+			sendkey(monitor, "shift-minus")
+		elif c == '"':
+			sendkey(monitor, "shift-apostrophe")
+		elif c == '/':
+			sendkey(monitor, "slash")
+		elif c == ' ':
+			sendkey(monitor, "spc")
+		elif c == '\t':
+			sendkey(monitor, "tab")
+		else:
+			print "unknown key: " + c
 
 def match_screen (monitor, working_dir, data_path, ref_screen):
 	refdump = os.path.join(data_path, ref_screen)
