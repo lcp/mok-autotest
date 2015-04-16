@@ -102,7 +102,6 @@ def main (argv):
 		from qemu import QemuControl
 		from qemu import QemuError
 		import vmimage
-		from vmimage import VMError
 	else:
 		print testcase_path + " is no a directory."
 		sys.exit(1)
@@ -175,7 +174,7 @@ def main (argv):
 		if vm.poll() == None:
 			vm.kill()
 		sys.exit(1)
-	except VMError as e:
+	except QemuError as e:
 		print e.msg
 		if vm.poll() == None:
 			vm.kill()
@@ -189,7 +188,7 @@ def main (argv):
 		if vm.poll() == None:
 			vm.kill()
 		sys.exit(1)
-	except VMError as e:
+	except QemuError as e:
 		print e.msg
 		if vm.poll() == None:
 			vm.kill()

@@ -10,6 +10,18 @@ class QemuError(Exception):
 	def __init__(self, msg):
 		self.msg = msg
 
+def cv2_image_match (image, template):
+	try:
+		res = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
+	except cv2.error:
+		return False
+
+	min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+	if max_val < 0.8:
+		return False
+
+	return True
+
 class QemuControl:
 	def sendkey (self, key):
 		self.monitor.send("sendkey " + key + "\n")
@@ -79,6 +91,49 @@ class QemuControl:
 			else:
 				print "unknown key: " + c
 
+	def match_partial_screen (self, ref_screen, x_start, x_end, y_start, y_end):
+		refdump = os.path.join(self.testcase_path, ref_screen)
+		tmpdump = os.path.join(self.working_dir, "tmpdump.ppm")
+
+		if os.path.exists(refdump) == False:
+			print refdump + " no found"
+			return False
+
+		# dump the screen
+		self.monitor.send("screendump " + tmpdump + "\n")
+
+		# FIXME wait screendump
+		time.sleep(1)
+
+		if os.path.exists(tmpdump) == False:
+			print "Failed to dump the screen"
+			return False
+
+		# compare the screendumps
+		ref_img = cv2.imread(refdump, 0)
+		tmp_img = cv2.imread(tmpdump, 0)
+
+		# crop ref_img with start and end
+		crop_img = ref_img[y_start:y_end, x_start:x_end]
+
+		return cv2_image_match(tmp_img, crop_img)
+
+	def match_partial_screen_wait (self, ref_screen, wait_time, retry,
+				       x_start, x_end, y_start, y_end):
+		count = 0
+
+		match = self.match_partial_screen(ref_screen, x_start, x_end,
+						  y_start, y_end)
+
+		while match == False:
+			count += 1
+			if retry > 0 and count > retry:
+				raise QemuError("Failed to match " + ref_screen)
+
+			time.sleep(wait_time)
+			match = self.match_partial_screen(ref_screen, x_start, x_end,
+							  y_start, y_end)
+
 	def match_screen (self, ref_screen):
 		refdump = os.path.join(self.testcase_path, ref_screen)
 		tmpdump = os.path.join(self.working_dir, "tmpdump.ppm")
@@ -101,16 +156,7 @@ class QemuControl:
 		ref_img = cv2.imread(refdump, 0)
 		tmp_img = cv2.imread(tmpdump, 0)
 
-		try:
-			res = cv2.matchTemplate(tmp_img, ref_img, cv2.TM_CCOEFF_NORMED)
-		except cv2.error:
-			return False
-
-		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-		if max_val < 0.8:
-			return False
-
-		return True
+		return cv2_image_match(tmp_img, ref_img)
 
 	def match_screen_wait (self, ref_screen, wait_time, retry):
 		count = 0
@@ -119,13 +165,11 @@ class QemuControl:
 
 		while match == False:
 			count += 1
-			if retry != -1 and count > retry:
-				return False
+			if retry > 0 and count > retry:
+				raise QemuError("Failed to match " + ref_screen)
 
 			time.sleep(wait_time)
 			match = self.match_screen(ref_screen)
-
-		return True
 
 	def shutdown (self):
 		self.monitor.send("system_powerdown\n")

@@ -2,7 +2,6 @@
 
 import os
 import sys
-import qemu
 import time
 import socket
 
@@ -12,57 +11,43 @@ class VMError(Exception):
 
 def setup_image (vm_control, password):
 	# openSUSE shim prompt
-	match = vm_control.match_screen_wait("shim-cert-prompt.png", 5, -1)
-	if match == False:
-		raise VMError("Failed to match shim-cert-prompt.png")
+	vm_control.match_screen_wait("shim-cert-prompt.png", 5, -1)
 	print "openSUSE shim prompt"
 	time.sleep(2)
 	vm_control.sendkey("down")
 	vm_control.sendkey("ret")
 
-	time.sleep(5)
-
 	# grub2
-	# TODO screenshot
+	vm_control.match_partial_screen_wait("os13.2-grub2.png", 5, 3, 0, 800, 0, 200)
 	print "grub2"
 	vm_control.sendkey("ret")
 
 	# Welcome
-	match = vm_control.match_screen_wait("os13.2-welcome.png", 5, -1)
-	if match == False:
-		raise VMError("Failed to match shim-cert-prompt.png")
+	vm_control.match_screen_wait("os13.2-welcome.png", 5, -1)
 	time.sleep(1)
 	print "Welcome"
 	vm_control.sendkey("alt-n")
 
 	# Installation Options
-	match = vm_control.match_screen_wait("os13.2-installation-options.png", 5, 3)
-	if match == False:
-		raise VMError("Failed to match os13.2-installation-options.png")
+	vm_control.match_screen_wait("os13.2-installation-options.png", 5, 3)
 	time.sleep(1)
 	print "Installation Options"
 	vm_control.sendkey("alt-n")
 
 	# Suggested Partitioning
-	match = vm_control.match_screen_wait("os13.2-suggested-partitioning.png", 5, 3)
-	if match == False:
-		raise VMError("Failed to match os13.2-suggested-partitioning.png")
+	vm_control.match_screen_wait("os13.2-suggested-partitioning.png", 5, 3)
 	time.sleep(1)
 	print "Suggested Partitioning"
 	vm_control.sendkey("alt-n")
 
 	# Clock and Time Zone
-	match = vm_control.match_screen_wait("os13.2-clock-and-time-zone.png", 5, 3)
-	if match == False:
-		raise VMError("Failed to match os13.2-clock-and-time-zone.png")
+	vm_control.match_screen_wait("os13.2-clock-and-time-zone.png", 5, 3)
 	time.sleep(1)
 	print "Clock and Time Zone"
 	vm_control.sendkey("alt-n")
 
 	# Desktop Selection
-	match = vm_control.match_screen_wait("os13.2-desktop-selection.png", 5, 3)
-	if match == False:
-		raise VMError("Failed to match os13.2-desktop-selection.png")
+	vm_control.match_screen_wait("os13.2-desktop-selection.png", 5, 3)
 	time.sleep(1)
 	print "Desktop Selection"
 	#	other
@@ -74,9 +59,7 @@ def setup_image (vm_control, password):
 	vm_control.sendkey("alt-n")
 
 	# Create New User
-	match = vm_control.match_screen_wait("os13.2-create-new-user.png", 5, 3)
-	if match == False:
-		raise VMError("Failed to match os13.2-create-new-user.png")
+	vm_control.match_screen_wait("os13.2-create-new-user.png", 5, 3)
 	time.sleep(1)
 	print "Create New User"
 	#	User's Full Name
@@ -90,9 +73,7 @@ def setup_image (vm_control, password):
 	vm_control.sendkey("alt-n")
 
 	# Installation Settings
-	match = vm_control.match_screen_wait("os13.2-installation-settings.png", 5, 3)
-	if match == False:
-		raise VMError("Failed to match os13.2-installation-settings.png")
+	vm_control.match_screen_wait("os13.2-installation-settings.png", 5, 3)
 	time.sleep(1)
 	print "Installation Settings"
 	time.sleep(2)
@@ -100,17 +81,18 @@ def setup_image (vm_control, password):
 	time.sleep(5)
 	vm_control.sendkey("alt-i")
 
+	# grub2 (after reboot)
+	vm_control.match_partial_screen_wait("os13.2-grub2.png", 5, -1, 0, 800, 0, 200)
+	print "grub2"
+	vm_control.sendkey("ret")
+
 	# Wait the image setup
-	match = vm_control.match_screen_wait("os13.2-login.png", 10, -1)
-	if match == False:
-		raise VMError("Failed to match os13.2-login.png")
+	vm_control.match_screen_wait("os13.2-login.png", 10, -1)
 	print "Installation done"
 
 def enable_serial_console (vm_control, password):
 	# Wait the image setup
-	match = vm_control.match_screen_wait("os13.2-login.png", 10, -1)
-	if match == False:
-		raise VMError("Failed to match os13.2-login.png")
+	vm_control.match_screen_wait("os13.2-login.png", 10, -1)
 
 	vm_control.sendstring("root\n")
 	time.sleep(5)
@@ -128,3 +110,6 @@ def enable_serial_console (vm_control, password):
 
 	print "update-bootloader"
 	vm_control.sendstring("update-bootloader --refresh\n")
+
+	# wait update-bootloader
+	time.sleep(20)
