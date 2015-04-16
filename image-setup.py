@@ -84,13 +84,6 @@ def main (argv):
 		print_help()
 		sys.exit(1)
 
-	if os.path.exists(qemu_img) == True:
-		if force_rewrite == False:
-			print qemu_img + " already exists."
-			sys.exit(1)
-		else:
-			os.remove(qemu_img)
-
 	if os.path.exists(iso_img) == False:
 		print iso_img + " doesn't exist."
 		sys.exit(1)
@@ -114,6 +107,14 @@ def main (argv):
 		sys.exit(1)
 
 	qemu_img = os.path.join(working_dir, qemu_img)
+
+	if os.path.exists(qemu_img) == True:
+		if force_rewrite == False:
+			print qemu_img + " already exists."
+			sys.exit(1)
+		else:
+			os.remove(qemu_img)
+
 	monitor_socket = os.path.join(working_dir, "monitor_socket")
 	serial_socket = os.path.join(working_dir, "serial_socket")
 
