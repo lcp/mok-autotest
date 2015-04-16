@@ -9,6 +9,9 @@ import signal
 import socket
 import subprocess
 
+from qemu import QemuControl
+from qemu import QemuError
+
 DEFAULT_UEFI = "/usr/share/qemu/ovmf-x86_64-ms.bin"
 Password = "not a s3cret"
 vm = None
@@ -99,8 +102,6 @@ def main (argv):
 	if os.path.isdir(testcase_path) == True:
 		testcase_path = os.path.abspath(testcase_path)
 		sys.path.append(testcase_path)
-		from qemu import QemuControl
-		from qemu import QemuError
 		import vmimage
 	else:
 		print testcase_path + " is no a directory."
