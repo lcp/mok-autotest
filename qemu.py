@@ -4,7 +4,9 @@ import os
 import cv2
 import time
 import socket
+import pexpect
 import tempfile
+from fdpexpect import fdspawn
 
 class QemuError(Exception):
 	def __init__(self, msg):
@@ -171,11 +173,23 @@ class QemuControl:
 			time.sleep(wait_time)
 			match = self.match_screen(ref_screen)
 
+	def pexpect_serial (self, string, wait_time):
+		try:
+			self.serial_exp.expect(string, timeout=wait_time)
+			return True
+		except:
+			return False
+
+	def write_serial (self, string):
+		self.serial_exp.sendline(string)
+
 	def shutdown (self):
 		self.monitor.send("system_powerdown\n")
 
 	def disconnect (self):
+		self.monitor.shutdown()
 		self.monitor.close()
+		self.serial.shutdown()
 		self.serial.close()
 
 	def connect (self):
@@ -192,8 +206,12 @@ class QemuControl:
 		self.serial = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 		self.serial.connect(self.serial_socket)
 
-	def __init__ (self, monitor_socket, serial_socket, working_dir, testcase_path):
+		self.serial_exp = pexpect.fdpexpect.fdspawn(self.serial.fileno(), logfile=self.serial_log)
+
+	def __init__ (self, monitor_socket, serial_socket, working_dir, testcase_path, serial_log=None):
 		self.monitor_socket = monitor_socket
 		self.serial_socket = serial_socket
 		self.working_dir = working_dir
 		self.testcase_path = testcase_path
+
+		self.serial_log = serial_log
