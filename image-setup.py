@@ -168,22 +168,10 @@ def main (argv):
 				 testcase_path)
 	vm_control.connect()
 
-	# scripts to setup the image
 	try:
+		# scripts to setup the image
 		vmimage.setup_image(vm_control, Password)
-	except socket.error:
-		print "qemu socket error"
-		if vm.poll() == None:
-			vm.kill()
-		sys.exit(1)
-	except QemuError as e:
-		print e.msg
-		if vm.poll() == None:
-			vm.kill()
-		sys.exit(1)
-
-	# enable serial console
-	try:
+		# enable serial console
 		vmimage.enable_serial_console(vm_control, Password)
 	except socket.error:
 		print "qemu socket error"
