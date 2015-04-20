@@ -19,7 +19,7 @@ def cv2_image_match (image, template):
 		return False
 
 	min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-	if max_val < 0.8:
+	if max_val < 0.95:
 		return False
 
 	return True

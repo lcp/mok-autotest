@@ -11,7 +11,7 @@ class VMError(Exception):
 
 def setup_image (vm_control, password):
 	# openSUSE shim prompt
-	vm_control.match_screen_wait("shim-cert-prompt.png", 5, -1)
+	vm_control.match_partial_screen_wait("shim-cert-prompt.png", 5, -1, 170, 625, 75, 160)
 	print "openSUSE shim prompt"
 	time.sleep(2)
 	vm_control.sendkey("down")
