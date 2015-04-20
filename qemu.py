@@ -93,27 +93,34 @@ class QemuControl:
 			else:
 				print "unknown key: " + c
 
+	def take_screenshot (self, output):
+		# dump the screen
+		self.monitor.send("screendump " + self.screenfifo + "\n")
+
+		# read from fifo
+		fp_fifo = open(self.screenfifo)
+		fp_dump = open(output, "w+")
+
+		buf = fp_fifo.read()
+		while buf != "":
+			fp_dump.write(buf)
+			buf = fp_fifo.read()
+
+		fp_fifo.close()
+		fp_dump.close()
+
 	def match_partial_screen (self, ref_screen, x_start, x_end, y_start, y_end):
 		refdump = os.path.join(self.testcase_path, ref_screen)
-		tmpdump = os.path.join(self.working_dir, "tmpdump.ppm")
 
 		if os.path.exists(refdump) == False:
 			print refdump + " no found"
 			return False
 
-		# dump the screen
-		self.monitor.send("screendump " + tmpdump + "\n")
-
-		# FIXME wait screendump
-		time.sleep(1)
-
-		if os.path.exists(tmpdump) == False:
-			print "Failed to dump the screen"
-			return False
+		self.take_screenshot(self.screenshot)
 
 		# compare the screendumps
 		ref_img = cv2.imread(refdump, 0)
-		tmp_img = cv2.imread(tmpdump, 0)
+		tmp_img = cv2.imread(self.screenshot, 0)
 
 		# crop ref_img with start and end
 		crop_img = ref_img[y_start:y_end, x_start:x_end]
@@ -138,25 +145,16 @@ class QemuControl:
 
 	def match_screen (self, ref_screen):
 		refdump = os.path.join(self.testcase_path, ref_screen)
-		tmpdump = os.path.join(self.working_dir, "tmpdump.ppm")
 
 		if os.path.exists(refdump) == False:
 			print refdump + " no found"
 			return False
 
-		# dump the screen
-		self.monitor.send("screendump " + tmpdump + "\n")
-
-		# FIXME wait screendump
-		time.sleep(1)
-
-		if os.path.exists(tmpdump) == False:
-			print "Failed to dump the screen"
-			return False
+		self.take_screenshot(self.screenshot)
 
 		# compare the screendumps
 		ref_img = cv2.imread(refdump, 0)
-		tmp_img = cv2.imread(tmpdump, 0)
+		tmp_img = cv2.imread(self.screenshot, 0)
 
 		return cv2_image_match(tmp_img, ref_img)
 
@@ -208,6 +206,11 @@ class QemuControl:
 
 		self.serial_exp = pexpect.fdpexpect.fdspawn(self.serial.fileno(), logfile=self.serial_log)
 
+		# setup the pipe for screendump
+		self.screenfifo = os.path.join(self.working_dir, "screenfifo")
+		if os.path.exists(self.screenfifo) == False:
+			os.mkfifo(self.screenfifo)
+
 	def __init__ (self, monitor_socket, serial_socket, working_dir, testcase_path, serial_log=None):
 		self.monitor_socket = monitor_socket
 		self.serial_socket = serial_socket
@@ -215,3 +218,5 @@ class QemuControl:
 		self.testcase_path = testcase_path
 
 		self.serial_log = serial_log
+
+		self.screenshot = os.path.join(self.working_dir, "screenshot.ppm")
