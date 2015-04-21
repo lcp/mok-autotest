@@ -57,7 +57,7 @@ def setup_image (vm_control, password):
 	vm_control.sendkey("ret")
 
 	# Password for the System Administrator
-	vm_control.match_screen_wait("sle11-sp3-password-admin.png", 5, -1)
+	vm_control.match_screen_wait("sle11-sp3-password-admin.png", 5, 120)
 	print "Password for the System Administrator"
 	vm_control.sendstring(password)
 	vm_control.sendkey("alt-f")
@@ -70,18 +70,18 @@ def setup_image (vm_control, password):
 	vm_control.sendkey("alt-n")
 
 	# Network Configuration
-	vm_control.match_screen_wait("sle11-sp3-network-configuration.png", 5, 10)
+	vm_control.match_screen_wait("sle11-sp3-network-configuration.png", 5, 30)
 	print "Network Configuration"
 	vm_control.sendkey("alt-n")
 
 	# Test Internet Connection
-	vm_control.match_screen_wait("sle11-sp3-test-internet.png", 5, 10)
+	vm_control.match_screen_wait("sle11-sp3-test-internet.png", 5, 30)
 	print "Test Internet Connection"
 	vm_control.sendkey("alt-o")
 	vm_control.sendkey("alt-n")
 
 	# Network Services Configuration
-	vm_control.match_screen_wait("sle11-sp3-network-services-configuration.png", 5, 3)
+	vm_control.match_screen_wait("sle11-sp3-network-services-configuration.png", 5, 30)
 	print "Network Services Configuration"
 	vm_control.sendkey("alt-s")
 	vm_control.sendkey("alt-n")
@@ -106,12 +106,12 @@ def setup_image (vm_control, password):
 	vm_control.sendkey("alt-n")
 
 	# Release Notes
-	vm_control.match_screen_wait("sle11-sp3-release-notes.png", 5, 3)
+	vm_control.match_screen_wait("sle11-sp3-release-notes.png", 5, 30)
 	print "Release Notes"
 	vm_control.sendkey("alt-n")
 
 	# Hardware Configuration
-	vm_control.match_screen_wait("sle11-sp3-hardware-configuration.png", 5, 15)
+	vm_control.match_screen_wait("sle11-sp3-hardware-configuration.png", 5, 30)
 	print "Hardware Configuration"
 	vm_control.sendkey("alt-n")
 
@@ -122,7 +122,7 @@ def setup_image (vm_control, password):
 	vm_control.sendkey("alt-f")
 
 	# GDM
-	vm_control.match_partial_screen_wait("sle11-sp3-gdm.png", 5, -1, 111, 685, 180, 420)
+	vm_control.match_partial_screen_wait("sle11-sp3-gdm.png", 5, 30, 111, 685, 180, 420)
 	print "Installation done"
 
 def enable_serial_console (vm_control, password):
