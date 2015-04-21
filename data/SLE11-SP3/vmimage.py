@@ -11,7 +11,7 @@ class VMError(Exception):
 
 def setup_image (vm_control, password):
 	# grub2
-	vm_control.match_partial_screen_wait("sle11-sp3-grub2.png", 5, 10, 260, 530, 70, 100)
+	vm_control.match_partial_screen_wait("sle11-sp3-installation-grub2.png", 5, 10, 260, 530, 70, 100)
 	print "grub2"
 	vm_control.sendkey("ret")
 
@@ -52,6 +52,9 @@ def setup_image (vm_control, password):
 	vm_control.sendkey("alt-i")
 
 	# Reboot
+	vm_control.match_partial_screen_wait("sle11-sp3-grub2.png", 5, -1, 300, 500, 70, 100)
+	print "grub2"
+	vm_control.sendkey("ret")
 
 	# Password for the System Administrator
 	vm_control.match_screen_wait("sle11-sp3-password-admin.png", 5, -1)
