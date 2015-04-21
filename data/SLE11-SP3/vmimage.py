@@ -12,11 +12,11 @@ class VMError(Exception):
 def setup_image (vm_control, password):
 	# grub2
 	vm_control.match_partial_screen_wait("sle11-sp3-installation-grub2.png", 5, 10, 260, 530, 70, 100)
-	print "grub2"
+	print "Installation grub2"
 	vm_control.sendkey("ret")
 
 	# Welcome
-	vm_control.match_screen_wait("sle11-sp3-welcome.png", 5, -1)
+	vm_control.match_screen_wait("sle11-sp3-welcome.png", 5, 120)
 	time.sleep(1)
 	print "Welcome"
 	vm_control.sendkey("alt-a")
@@ -70,18 +70,18 @@ def setup_image (vm_control, password):
 	vm_control.sendkey("alt-n")
 
 	# Network Configuration
-	vm_control.match_screen_wait("sle11-sp3-network-configuration.png", 5, 30)
+	vm_control.match_screen_wait("sle11-sp3-network-configuration.png", 5, 40)
 	print "Network Configuration"
 	vm_control.sendkey("alt-n")
 
 	# Test Internet Connection
-	vm_control.match_screen_wait("sle11-sp3-test-internet.png", 5, 30)
+	vm_control.match_screen_wait("sle11-sp3-test-internet.png", 5, 40)
 	print "Test Internet Connection"
 	vm_control.sendkey("alt-o")
 	vm_control.sendkey("alt-n")
 
 	# Network Services Configuration
-	vm_control.match_screen_wait("sle11-sp3-network-services-configuration.png", 5, 30)
+	vm_control.match_screen_wait("sle11-sp3-network-services-configuration.png", 5, 40)
 	print "Network Services Configuration"
 	vm_control.sendkey("alt-s")
 	vm_control.sendkey("alt-n")
@@ -94,6 +94,7 @@ def setup_image (vm_control, password):
 
 	# New Local User
 	vm_control.match_screen_wait("sle11-sp3-new-local-user.png", 5, 3)
+	time.sleep(5)
 	print "New Local User"
 	#	User's Full Name
 	vm_control.sendstring("linux")
@@ -116,7 +117,7 @@ def setup_image (vm_control, password):
 	vm_control.sendkey("alt-n")
 
 	# Installation Completed
-	vm_control.match_screen_wait("sle11-sp3-installation-completed.png", 5, 3)
+	vm_control.match_screen_wait("sle11-sp3-installation-completed.png", 5, 40)
 	print "Installation Completed"
 	vm_control.sendkey("alt-c")
 	vm_control.sendkey("alt-f")
@@ -136,8 +137,8 @@ def enable_serial_console (vm_control, password):
 	time.sleep(5)
 
 	sed_cmd = "sed -i"
-	sed_cmd += " 's/GRUB_CMDLINE_LINUX_DEFAULT=\"/& console=tty0 console=ttyS0,38400n8 /'"
-	sed_cmd += " /etc/default/grub"
+	sed_cmd += " 's/append = \"/& console=tty0 console=ttyS0,38400n8 /'"
+	sed_cmd += " /etc/elilo.conf"
 
 	print "serial console parameters"
 	vm_control.sendstring(sed_cmd + "\n")
