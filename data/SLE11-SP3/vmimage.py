@@ -43,8 +43,31 @@ def setup_image (vm_control, password):
 	vm_control.sendkey("alt-n")
 
 	# Installation Settings
-	print "Installation Settings"
 	vm_control.match_screen_wait("sle11-sp3-installation-settings.png", 5, 3)
+	print "Installation Settings"
+
+	# Software selection
+	vm_control.sendkey("alt-c")
+	time.sleep(2)
+	vm_control.sendkey("s")
+	vm_control.match_screen_wait("sle11-sp3-software-selection.png", 5, 3)
+
+	# No gnome
+	vm_control.move_mouse(-120, -60)
+	time.sleep(2)
+	vm_control.mouse_click("middle")
+	time.sleep(2)
+	vm_control.mouse_click("left")
+	time.sleep(2)
+	vm_control.mouse_click("right")
+	time.sleep(1)
+
+	vm_control.sendkey("alt-o")
+	time.sleep(3)
+	vm_control.match_screen_wait("sle11-sp3-font-agreement.png", 5, 3)
+	vm_control.sendkey("alt-a")
+	time.sleep(5)
+
 	vm_control.sendkey("alt-i")
 	time.sleep(3)
 	vm_control.sendkey("alt-a")
@@ -122,14 +145,15 @@ def setup_image (vm_control, password):
 	vm_control.sendkey("alt-c")
 	vm_control.sendkey("alt-f")
 
-	# GDM
-	vm_control.match_partial_screen_wait("sle11-sp3-gdm.png", 5, 30, 111, 685, 180, 420)
+	# console
+	vm_control.match_partial_screen_wait("sle11-sp3-xdm.png", 5, 30, 145, 655, 200, 400)
 	print "Installation done"
 
 def enable_serial_console (vm_control, password):
 	# Switch to console
 	vm_control.sendkey("ctrl-alt-f2")
 	time.sleep(3)
+	vm_control.match_partial_screen_wait("sle11-sp3-login.png", 5, 3, 0, 685, 30, 50)
 
 	vm_control.sendstring("root\n")
 	time.sleep(5)

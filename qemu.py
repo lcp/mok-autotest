@@ -93,6 +93,17 @@ class QemuControl:
 			else:
 				print "unknown key: " + c
 
+	def move_mouse (self, dx, dy):
+		self.monitor.send("mouse_move " + str(dx) + " " + str(dy) + "\n")
+
+	def mouse_click (self, button):
+		if button == "left":
+			self.monitor.send("mouse_button 1\n")
+		elif button == "middle":
+			self.monitor.send("mouse_button 2\n")
+		elif button == "right":
+			self.monitor.send("mouse_button 4\n")
+
 	def take_screenshot (self, output):
 		# dump the screen
 		self.monitor.send("screendump " + self.screenfifo + "\n")
